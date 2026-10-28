@@ -19,4 +19,29 @@ namespace units{
     // - Percentage = (float)(integer / 100.0f)
     using Percentage = uint8_t;
 
+    using Hz  = uint32_t;
+    using HzF = float;
+
+    // pwm
+    using DutyCycle    = PercentageF;   // .0f to 1.0f of the carrier period
+    using PwmLevel     = uint16_t;      // compare value, in counter ticks
+    using PwmWrap      = uint16_t;      // counter top value, in counter ticks
+    using ClockDivider = uint8_t;       // integer pwm clock divider
+
+    // electrical and thermal sensing
+    using AdcCounts = uint16_t; // 12 bit reading, raw or oversampled
+    using Volts     = float;
+    using Amperes   = float;
+    using Ohms      = float;
+    using Celsius   = float;
+    using Kelvin    = float;
+
 } // namespace units
+
+namespace physical{
+
+    using Pin        = uint8_t;
+    using AdcChannel = uint8_t;
+    using PwmSlice   = uint8_t;
+
+} // namespace physical

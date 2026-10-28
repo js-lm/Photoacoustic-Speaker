@@ -15,6 +15,15 @@ set(ENABLE_UART_OUTPUT 0)
 
 pico_sdk_init()
 
+include(FetchContent)
+
+FetchContent_Declare(
+    magic_enum
+    GIT_REPOSITORY https://github.com/Neargye/magic_enum
+    GIT_TAG v0.9.7
+)
+FetchContent_MakeAvailable(magic_enum)
+
 file(GLOB_RECURSE PROJECT_SOURCES
     CONFIGURE_DEPENDS
     ${CMAKE_CURRENT_LIST_DIR}/sources/*.cpp
@@ -32,9 +41,11 @@ target_include_directories(${PROJECT_TARGET} PRIVATE
 
 target_link_libraries(${PROJECT_TARGET} 
     pico_stdlib  
-    hardware_i2c
     hardware_adc
+    hardware_pwm
+    hardware_gpio
     pico_multicore
+    magic_enum::magic_enum
 )
 
 pico_enable_stdio_usb(${PROJECT_TARGET} ${ENABLE_USB_OUTPUT})
