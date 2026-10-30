@@ -11,5 +11,10 @@ namespace constants::sensing{
     constexpr float             NtcBeta                 {3977.0f};   // Vishay NTCLE100E3103JB0
     constexpr units::Kelvin     KelvinOffset            {273.15f};
 
-} // namespace constants::sensing
+    constexpr uint8_t           OversampleCount         {16};
+    constexpr uint8_t           ZeroOffsetSampleCount   {64};
+    constexpr units::Us         SampleInterval          {1'000};
 
+    constexpr units::DutyCycle  MinimumDutyForPeakEstimate  {.05f};
+
+} // namespace constants::sensing

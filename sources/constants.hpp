@@ -16,6 +16,14 @@ namespace constants{
         constexpr physical::Pin HeatsinkNtc     {27}; // GP27 / ADC1 <- R25 + RT1
     } // namespace pins
 
+    namespace adc{
+        constexpr physical::AdcChannel AverageCurrentChannel{0};
+        constexpr physical::AdcChannel HeatsinkNtcChannel   {1};
+
+        constexpr units::AdcCounts MaximumCount     {4095}; // 12 bits
+        constexpr units::Volts     ReferenceVoltage {3.274f};
+    } // namespace adc
+
     namespace system{
         constexpr units::Hz SystemClock             {125'000'000};
         constexpr units::Ms WatchdogTimeout         {100};
