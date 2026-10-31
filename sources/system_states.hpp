@@ -10,3 +10,11 @@ enum class SystemState : uint8_t{
     Tripped,
     Fault
 };
+
+enum class FaultCode : uint8_t{
+    None,
+    Over_Temperature,
+    Ntc_Disconnected,
+    Overcurrent,
+    Watchdog_Reset
+};
