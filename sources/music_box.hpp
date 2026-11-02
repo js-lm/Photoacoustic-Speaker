@@ -15,10 +15,16 @@ private:
     SafetyMonitor   safetyMonitor_{};
 
 private:
-    SystemState state_{SystemState::Booting};
+    SystemState         state_              {SystemState::Booting};
+    FaultCode           faultCode_          {FaultCode::None};
+
+    units::DutyCycle    currentDuty_        {.0f};
+    units::DutyCycle    targetDuty_         {.0f};
 
 private:
-    units::TimestampUs  lastUpdateTime_{0};
+    units::TimestampUs  lastUpdateTime_     {0};
+    units::TimestampUs  armSignalSince_     {0};
+    bool                isArmSignalStable_  {false};
 
 public:
     static MusicBox &getInstance();
@@ -41,7 +47,13 @@ private:
 private:
     void updateDisarmedState(units::TimestampUs currentTime);
     void updateArmedIdleState();
+    void updateRampingUpState(float deltaSeconds);
     void updateRunningState();
     void updateTrippedState();
     void updateFaultState();
+
+#ifdef DEBUG
+private:
+    void DEBUG_printTelemetry() const;
+#endif
 };

@@ -6,6 +6,7 @@ enum class SystemState : uint8_t{
     Booting,
     Disarmed,
     Armed_Idle,
+    Ramping_Up,
     Running,
     Tripped,
     Fault
