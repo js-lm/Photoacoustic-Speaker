@@ -60,11 +60,42 @@ void MusicBox::transitionTo(SystemState nextState){
     DEBUG_PRINT("State -> %.*s", static_cast<int>(stateName.size()), stateName.data());
 }
 
-void MusicBox::updateDisarmedState(units::TimestampUs currentTime){}
+void MusicBox::updateDisarmedState(units::TimestampUs currentTime){
+    safetyMonitor_.clearEdgeTrip();
 
-void MusicBox::updateArmedIdleState(){}
+    if(!safetyMonitor_.isLatchArmed() || !safetyMonitor_.isInterlockClosed()){
+        isArmSignalStable_ = false;
+        return;
+    }
 
-void MusicBox::updateRampingUpState(float deltaSeconds){}
+    if(!isArmSignalStable_){
+        isArmSignalStable_ = true;
+        armSignalSince_    = currentTime;
+        return;
+    }
+
+    if(currentTime - armSignalSince_ >= units::Ms2Us(constants::safety::ArmDebounceDuration)){
+        transitionTo(SystemState::Armed_Idle);
+    }
+}
+
+void MusicBox::updateArmedIdleState(){
+    if(!constants::system::ShouldAutoStart) return;
+
+    targetDuty_ = constants::carrier::DefaultDuty;
+    transitionTo(SystemState::Ramping_Up);
+}
+
+void MusicBox::updateRampingUpState(float deltaSeconds){
+    // TODO: check duty ramp on scope
+    currentDuty_ = std::min(
+        currentDuty_ + constants::carrier::RampRatePerSecond * deltaSeconds,
+        targetDuty_
+    );
+    carrierManager_.setDuty(currentDuty_);
+
+    if(currentDuty_ >= targetDuty_) transitionTo(SystemState::Running);
+}
 
 void MusicBox::updateRunningState(){
     carrierManager_.setDuty(currentDuty_);
