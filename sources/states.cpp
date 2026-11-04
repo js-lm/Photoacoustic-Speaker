@@ -113,6 +113,21 @@ void MusicBox::updateFaultState(){
     transitionTo(SystemState::Disarmed);
 }
 
-#ifdef DEBUG
-void MusicBox::DEBUG_printTelemetry() const{}
-#endif
+void MusicBox::DEBUG_printTelemetry() const{
+    const auto stateName{magic_enum::enum_name(state_)};
+    const auto faultName{magic_enum::enum_name(faultCode_)};
+
+    DEBUG_PRINT_TIMED(
+        constants::system::TelemetryPrintInterval,
+        "%.*s fault=%.*s duty=%.2f latch=%d interlock=%d Iavg=%.3fA Ipk=%.2fA ntc=%u T=%.1fC",
+        static_cast<int>(stateName.size()), stateName.data(),
+        static_cast<int>(faultName.size()), faultName.data(),
+        currentDuty_,
+        safetyMonitor_.isLatchArmed(),
+        safetyMonitor_.isInterlockClosed(),
+        sensingManager_.averageCurrent(),
+        sensingManager_.peakCurrent(currentDuty_),
+        sensingManager_.ntcCounts(),
+        sensingManager_.heatsinkTemperature()
+    );
+}

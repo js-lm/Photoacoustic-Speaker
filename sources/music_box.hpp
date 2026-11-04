@@ -52,8 +52,6 @@ private:
     void updateTrippedState();
     void updateFaultState();
 
-#ifdef DEBUG
 private:
     void DEBUG_printTelemetry() const;
-#endif
 };
