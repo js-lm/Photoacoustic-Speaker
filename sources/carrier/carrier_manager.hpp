@@ -29,5 +29,7 @@ public:
     units::PwmLevel dutyToLevel(units::DutyCycle duty) const;
 
     units::Hz actualFrequency() const{ return frequency_;}
+    units::PwmWrap wrap() const{ return wrap_;}
+    units::PwmLevel capLevel() const{ return capLevel_;}
     bool isAttached() const{ return isAttached_;}
 };
