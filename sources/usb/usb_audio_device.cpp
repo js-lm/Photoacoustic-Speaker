@@ -39,11 +39,12 @@ void UsbAudioDevice::discard(uint16_t frameCount){}
 // TODO
 bool UsbAudioDevice::checkOverflow(){ return false;}
 
-// TODO
-void UsbAudioDevice::handleMount(){}
+void UsbAudioDevice::handleMount(){ isMounted_ = true;}
 
-// TODO
-void UsbAudioDevice::handleUnmount(){}
+void UsbAudioDevice::handleUnmount(){
+    isMounted_    = false;
+    isStreamOpen_ = false;
+}
 
 // TODO
 void UsbAudioDevice::handleStreamInterface(uint8_t alternate){}
@@ -57,5 +58,11 @@ bool UsbAudioDevice::handleGetRequest(uint8_t rootHubPort, const tusb_control_re
 // TODO
 bool UsbAudioDevice::handleSetRequest(uint8_t rootHubPort, const tusb_control_request_t *request, const uint8_t *buffer){ return false;}
 
-// TODO
-void UsbAudioDevice::DEBUG_reportEvents(){}
+void UsbAudioDevice::DEBUG_reportEvents(){
+    if(isMounted_ != wasMounted_){
+        wasMounted_ = isMounted_;
+        DEBUG_PRINT("USB: %s", isMounted_ ? "mounted, speaker available to the host" : "unmounted");
+    }
+
+    // TODO: host volume report
+}

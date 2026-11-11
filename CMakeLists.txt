@@ -46,6 +46,7 @@ target_include_directories(${PROJECT_TARGET} PRIVATE
 
 target_link_libraries(${PROJECT_TARGET}
     pico_stdlib
+    pico_unique_id
     pico_multicore
     hardware_adc
     hardware_pwm
