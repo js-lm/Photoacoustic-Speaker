@@ -13,6 +13,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(ENABLE_USB_OUTPUT 1)
 set(ENABLE_UART_OUTPUT 0)
 
+set(LOG 0)
+
 pico_sdk_init()
 
 include(FetchContent)
@@ -33,18 +35,22 @@ add_executable(${PROJECT_TARGET} ${PROJECT_SOURCES})
 
 target_compile_definitions(${PROJECT_TARGET} PRIVATE
     $<$<CONFIG:Debug>:DEBUG>
+    PICO_STDIO_USB_STDOUT_TIMEOUT_US=20000
+    PICO_ENABLE_USB_RESET_VIA_BAUD_RATE=1
 )
 
-target_include_directories(${PROJECT_TARGET} PRIVATE 
+target_include_directories(${PROJECT_TARGET} PRIVATE
     sources
+    sources/usb # tusb_config.h
 )
 
-target_link_libraries(${PROJECT_TARGET} 
-    pico_stdlib  
+target_link_libraries(${PROJECT_TARGET}
+    pico_stdlib
+    pico_multicore
     hardware_adc
     hardware_pwm
     hardware_gpio
-    pico_multicore
+    tinyusb_device
     magic_enum::magic_enum
 )
 

@@ -27,10 +27,14 @@ int MusicBox::run(){
 
 void MusicBox::initialize(){
     carrierManager_.initialize();
+    usbAudioDevice_.initialize();
 
     stdio_init_all();
+
+#ifdef DEBUG
+    DEBUG_waitForConsole();
+#endif
     DEBUG_PRINT("Fast-Switching LED Driver initializing...");
-    DEBUG_SLEEP_MS(constants::system::DEBUG_StartupDelay);
 
     if(clock_get_hz(clk_sys) != constants::system::SystemClock){
         DEBUG_PRINT(
@@ -62,6 +66,7 @@ void MusicBox::initialize(){
 
 void MusicBox::update(){
     watchdog_update();
+    usbAudioDevice_.update();
 
     const units::TimestampUs currentTime{time_us_64()};
     const float deltaSeconds{(currentTime - lastUpdateTime_) / constants::system::MicrosecondsPerSecond};
@@ -84,4 +89,12 @@ void MusicBox::update(){
 #ifdef DEBUG
     DEBUG_printTelemetry();
 #endif
+}
+
+void MusicBox::DEBUG_waitForConsole(){
+    // a plain sleep would starve tinyusb, keep servicing it so the cdc port enumerates and early logs are seen
+    const units::TimestampUs endTime{time_us_64() + units::Ms2Us(constants::system::DEBUG_StartupDelay)};
+    while(time_us_64() < endTime){
+        usbAudioDevice_.update();
+    }
 }

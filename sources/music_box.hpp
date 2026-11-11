@@ -7,9 +7,11 @@
 #include "carrier/carrier_manager.hpp"
 #include "sensing/sensing_manager.hpp"
 #include "safety/safety_monitor.hpp"
+#include "usb/usb_audio_device.hpp"
 
 class MusicBox{
 private:
+    UsbAudioDevice  &usbAudioDevice_{UsbAudioDevice::getInstance()};
     CarrierManager  carrierManager_{};
     SensingManager  sensingManager_{};
     SafetyMonitor   safetyMonitor_{};
@@ -54,4 +56,5 @@ private:
 
 private:
     void DEBUG_printTelemetry() const;
+    void DEBUG_waitForConsole();
 };

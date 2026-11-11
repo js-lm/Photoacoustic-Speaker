@@ -5,6 +5,7 @@
 #include "carrier/carrier_constants.hpp"
 #include "sensing/sensing_constants.hpp"
 #include "safety/safety_constants.hpp"
+#include "audio/audio_constants.hpp"
 
 namespace constants{
 
