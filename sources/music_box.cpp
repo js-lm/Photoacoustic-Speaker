@@ -2,6 +2,8 @@
 
 #include "constants.hpp"
 
+#include "panic_report.hpp"
+
 #include <pico/stdlib.h>
 #include <hardware/watchdog.h>
 #include <hardware/clocks.h>
@@ -26,6 +28,7 @@ int MusicBox::run(){
 }
 
 void MusicBox::initialize(){
+    PanicReport::initialize();
     carrierManager_.initialize();
     usbAudioDevice_.initialize();
 
@@ -50,11 +53,13 @@ void MusicBox::initialize(){
 
     lastUpdateTime_ = time_us_64();
 
-    // TODO: test watchdog, see if reboot flags and safe fallback to disarmed or fault state
     const bool hasWatchdogReset{watchdog_caused_reboot()};
     watchdog_enable(constants::system::WatchdogTimeout, true);
 
-    if(hasWatchdogReset){
+    if(PanicReport::previousPanic() != nullptr){
+        faultCode_ = FaultCode::Firmware_Panic;
+        transitionTo(SystemState::Fault);
+    }else if(hasWatchdogReset){
         faultCode_ = FaultCode::Watchdog_Reset;
         transitionTo(SystemState::Fault);
     }else{
@@ -94,7 +99,13 @@ void MusicBox::update(){
 void MusicBox::DEBUG_waitForConsole(){
     // a plain sleep would starve tinyusb, keep servicing it so the cdc port enumerates and early logs are seen
     const units::TimestampUs endTime{time_us_64() + units::Ms2Us(constants::system::DEBUG_StartupDelay)};
+    bool hasReportedPanic{PanicReport::previousPanic() == nullptr};
     while(time_us_64() < endTime){
         usbAudioDevice_.update();
+
+        if(!hasReportedPanic && tud_cdc_connected()){
+            DEBUG_PRINT("PREVIOUS BOOT PANICKED: %s", PanicReport::previousPanic());
+            hasReportedPanic = true;
+        }
     }
 }

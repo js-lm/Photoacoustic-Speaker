@@ -17,5 +17,6 @@ enum class FaultCode : uint8_t{
     Over_Temperature,
     Ntc_Disconnected,
     Overcurrent,
-    Watchdog_Reset
+    Watchdog_Reset,
+    Firmware_Panic
 };

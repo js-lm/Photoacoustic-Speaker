@@ -55,6 +55,8 @@ target_link_libraries(${PROJECT_TARGET}
     magic_enum::magic_enum
 )
 
+target_link_options(${PROJECT_TARGET} PRIVATE -Wl,--wrap=panic)
+
 pico_enable_stdio_usb(${PROJECT_TARGET} ${ENABLE_USB_OUTPUT})
 pico_enable_stdio_uart(${PROJECT_TARGET} ${ENABLE_UART_OUTPUT})
 
