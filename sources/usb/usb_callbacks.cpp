@@ -22,6 +22,18 @@ bool tud_audio_set_itf_cb(uint8_t rootHubPort, tusb_control_request_t const *req
     return true;
 }
 
+bool tud_audio_set_itf_close_EP_cb(uint8_t rootHubPort, tusb_control_request_t const *request){
+    (void)rootHubPort;
+    const uint8_t interface{tu_u16_low(tu_le16toh(request->wIndex))};
+
+    if(interface == usb_descriptors::Interface::Audio_Streaming){
+        UsbAudioDevice::getInstance().handleStreamEndpointsClosing();
+        UsbAudioDevice::getInstance().handleStreamInterface(0);
+    }
+
+    return true;
+}
+
 bool tud_audio_get_req_entity_cb(uint8_t rootHubPort, tusb_control_request_t const *request){
     return UsbAudioDevice::getInstance().handleGetRequest(rootHubPort, request);
 }

@@ -58,6 +58,7 @@ public:
     void handleMount();
     void handleUnmount();
     void handleStreamInterface(uint8_t alternate);
+    void handleStreamEndpointsClosing();
     bool handleGetRequest(uint8_t rootHubPort, const tusb_control_request_t *request);
     bool handleSetRequest(uint8_t rootHubPort, const tusb_control_request_t *request, const uint8_t *buffer);
     void handleFeedbackParameters(audio_feedback_params_t *parameters);

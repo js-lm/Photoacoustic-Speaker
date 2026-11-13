@@ -4,6 +4,8 @@
 #include "usb/usb_descriptors.hpp"
 
 #include <pico/time.h>
+#include <hardware/address_mapped.h>
+#include <hardware/structs/usb.h>
 
 #include <algorithm>
 #include <cmath>
@@ -72,6 +74,34 @@ void UsbAudioDevice::handleUnmount(){
 }
 
 void UsbAudioDevice::handleStreamInterface(uint8_t alternate){ isStreamOpen_ = alternate != 0;}
+
+void UsbAudioDevice::handleStreamEndpointsClosing(){
+    // workaround for tinyusb 0.18 on the rp2040: iso endpoints are never closed on an alternate setting change,
+    // so the receive (and feedback) buffer armed for the previous stream stays armed in hardware. arming it again
+    // when the host reopens the stream panics with "ep 01 was already available", which linux does while probing.
+    // abort both endpoints and clear their buffer control so the next activation starts from a clean slate
+    constexpr uint8_t EndpointNumber{usb_descriptors::endpoint::AudioOut & 0x0F};
+    static_assert(EndpointNumber == (usb_descriptors::endpoint::AudioFeedback & 0x0F), "data and feedback must share a number");
+
+    constexpr uint32_t AbortMask{(USB_EP_ABORT_EP0_IN_BITS | USB_EP_ABORT_EP0_OUT_BITS) << (2 * EndpointNumber)};
+    constexpr uint32_t BufferStatusMask{(USB_BUFF_STATUS_EP0_IN_BITS | USB_BUFF_STATUS_EP0_OUT_BITS) << (2 * EndpointNumber)};
+
+    // only works from chip revision b2 on (rp2040-e2)
+    const bool canAbort{rp2040_chip_version() >= 2};
+    if(canAbort){
+        hw_set_bits(&usb_hw->abort, AbortMask);
+        while((usb_hw->abort_done & AbortMask) != AbortMask) tight_loop_contents();
+    }
+
+    usb_dpram->ep_buf_ctrl[EndpointNumber].in  = 0;
+    usb_dpram->ep_buf_ctrl[EndpointNumber].out = 0;
+    hw_clear_bits(&usb_hw->buf_status, BufferStatusMask);
+
+    if(canAbort){
+        hw_clear_bits(&usb_hw->abort_done, AbortMask);
+        hw_clear_bits(&usb_hw->abort, AbortMask);
+    }
+}
 
 void UsbAudioDevice::handleFeedbackParameters(audio_feedback_params_t *parameters){
     parameters->method      = AUDIO_FEEDBACK_METHOD_FIFO_COUNT;
