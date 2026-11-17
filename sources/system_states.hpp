@@ -8,6 +8,7 @@ enum class SystemState : uint8_t{
     Armed_Idle,
     Ramping_Up,
     Running,
+    Ramping_Down,
     Tripped,
     Fault
 };

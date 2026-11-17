@@ -1,0 +1,94 @@
+#pragma once
+
+#include "constants.hpp"
+#include "aliases.hpp"
+
+#include "usb/usb_audio_device.hpp"
+#include "carrier/carrier_manager.hpp"
+
+#include <bit>
+#include <cstdint>
+
+// turns the usb sample stream into pwm compare words
+//
+//   usb fifo -> mono mix x host volume -> (pre-emphasis) -> duty in [0, MaximumAudioDuty] x fade envelope
+//            -> ring buffer -> dma paced by the pwm wrap, one compare word per carrier period
+//
+// every word in the ring is already clamped to the carrier cap, so a stalled loop or a glitch can only
+// replay audio, never drive the output past the cap
+class AudioStreamer{
+private:
+    static constexpr uint32_t RingMask          {constants::audio::RingLength - 1};
+    static constexpr uint32_t RingBytes         {constants::audio::RingLength * sizeof(uint32_t)};
+    static constexpr uint32_t RingAddressBits   {static_cast<uint32_t>(std::countr_zero(RingBytes))};
+    static constexpr int32_t  EnvelopeUnity     {1 << 24};
+
+private:
+    alignas(RingBytes) uint32_t ring_[constants::audio::RingLength]{};
+    int16_t     readBuffer_[constants::audio::ChannelCount * constants::audio::ReadChunkFrames]{};
+
+    int         dmaChannel_         {-1};
+    uint32_t    writtenCount_       {0}; // words written since the dma started
+    bool        isRunning_          {false};
+
+private:
+    uint32_t    fullScaleLevel_     {0};
+    uint32_t    capLevel_           {0};
+    uint32_t    periodTicks_        {1};
+    int32_t     envelopeStep_       {0};
+
+private:
+    bool                isStreamOpen_       {false};
+    bool                isPrimed_           {false};
+    bool                isMuted_            {false};
+    bool                isSilent_           {false};
+    bool                isOutputEnabled_    {false};
+    int32_t             leftGain_           {1 << 15}; // Q15 host volume, cached every pump
+    int32_t             rightGain_          {1 << 15};
+    int32_t             envelope_           {0}; // Q24, 0 = dark, EnvelopeUnity = full range
+    int32_t             previousSample_     {0}; // pre-emphasis state
+    units::TimestampUs  primingStartTime_   {0};
+    units::TimestampUs  lastSignalTime_     {0};
+
+private:
+    uint32_t    playedCount_        {0};
+    int32_t     playedLevelAverage_ {0}; // Q16 levels
+
+public:
+    AudioStreamer() = default;
+    ~AudioStreamer() = default;
+
+    void initialize();
+
+public:
+    void start(const CarrierManager &carrierManager);
+    void stop();
+
+    void pump(UsbAudioDevice &usbAudioDevice);
+    void discard(UsbAudioDevice &usbAudioDevice);
+
+    void setOutputEnabled(bool shouldEnable){ isOutputEnabled_ = shouldEnable;}
+
+public:
+    bool isRunning() const{ return isRunning_;}
+    bool hasSignal() const{ return isStreamOpen_ && isPrimed_ && !isMuted_ && !isSilent_;}
+    bool isFadedIn() const{ return envelope_ >= EnvelopeUnity;}
+    bool isFadedOut() const{ return envelope_ <= 0;}
+
+    units::DutyCycle playedDuty() const;
+
+private:
+    void startDma();
+    uint32_t consumedCount() const;
+    void foldPlayedSamples(uint32_t consumed);
+
+private:
+    void trackStream(const UsbAudioDevice &usbAudioDevice, units::TimestampUs currentTime);
+    void updatePriming(const UsbAudioDevice &usbAudioDevice, units::TimestampUs currentTime);
+    void updateSilenceGate(int32_t chunkPeak, units::TimestampUs currentTime);
+
+private:
+    void writeFrames(const int16_t *samples, uint16_t frameCount, units::TimestampUs currentTime);
+    void writeSilence(uint32_t sampleCount);
+    void writeSample(int32_t sample);
+};

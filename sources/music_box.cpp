@@ -48,10 +48,9 @@ void MusicBox::initialize(){
     }
 
     carrierManager_.configure(constants::carrier::DefaultFrequency);
+    audioStreamer_.initialize();
     sensingManager_.initialize();
     safetyMonitor_.initialize(carrierManager_);
-
-    lastUpdateTime_ = time_us_64();
 
     const bool hasWatchdogReset{watchdog_caused_reboot()};
     watchdog_enable(constants::system::WatchdogTimeout, true);
@@ -74,18 +73,20 @@ void MusicBox::update(){
     usbAudioDevice_.update();
 
     const units::TimestampUs currentTime{time_us_64()};
-    const float deltaSeconds{(currentTime - lastUpdateTime_) / constants::system::MicrosecondsPerSecond};
-    lastUpdateTime_ = currentTime;
 
     sensingManager_.update();
+
+    if(audioStreamer_.isRunning()) audioStreamer_.pump(usbAudioDevice_);
+    else audioStreamer_.discard(usbAudioDevice_);
 
     if(isOutputState() && checkProtection()) return;
 
     switch(state_){
     case SystemState::Disarmed:     updateDisarmedState(currentTime);   break;
     case SystemState::Armed_Idle:   updateArmedIdleState();             break;
-    case SystemState::Ramping_Up:   updateRampingUpState(deltaSeconds); break;
+    case SystemState::Ramping_Up:   updateRampingUpState();             break;
     case SystemState::Running:      updateRunningState();               break;
+    case SystemState::Ramping_Down: updateRampingDownState();           break;
     case SystemState::Tripped:      updateTrippedState();               break;
     case SystemState::Fault:        updateFaultState();                 break;
     default: break;

@@ -32,9 +32,6 @@ namespace constants{
         constexpr float     MicrosecondsPerSecond   {1'000'000.0f};
 
         constexpr units::Ms DEBUG_StartupDelay      {2000};
-
-        // ramp to the default duty as soon as the latch is armed
-        constexpr bool ShouldAutoStart              {true};
     } // namespace system
 
 } // namespace constants

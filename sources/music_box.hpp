@@ -7,11 +7,13 @@
 #include "carrier/carrier_manager.hpp"
 #include "sensing/sensing_manager.hpp"
 #include "safety/safety_monitor.hpp"
+#include "audio/audio_streamer.hpp"
 #include "usb/usb_audio_device.hpp"
 
 class MusicBox{
 private:
     UsbAudioDevice  &usbAudioDevice_{UsbAudioDevice::getInstance()};
+    AudioStreamer   audioStreamer_{};
     CarrierManager  carrierManager_{};
     SensingManager  sensingManager_{};
     SafetyMonitor   safetyMonitor_{};
@@ -20,11 +22,7 @@ private:
     SystemState         state_              {SystemState::Booting};
     FaultCode           faultCode_          {FaultCode::None};
 
-    units::DutyCycle    currentDuty_        {.0f};
-    units::DutyCycle    targetDuty_         {.0f};
-
 private:
-    units::TimestampUs  lastUpdateTime_     {0};
     units::TimestampUs  armSignalSince_     {0};
     bool                isArmSignalStable_  {false};
 
@@ -49,8 +47,9 @@ private:
 private:
     void updateDisarmedState(units::TimestampUs currentTime);
     void updateArmedIdleState();
-    void updateRampingUpState(float deltaSeconds);
+    void updateRampingUpState();
     void updateRunningState();
+    void updateRampingDownState();
     void updateTrippedState();
     void updateFaultState();
 
