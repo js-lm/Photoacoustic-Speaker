@@ -64,8 +64,6 @@ void MusicBox::initialize(){
     }else{
         transitionTo(SystemState::Disarmed);
     }
-
-    DEBUG_PRINT("Carrier set to %lu Hz", static_cast<unsigned long>(carrierManager_.actualFrequency()));
 }
 
 void MusicBox::update(){

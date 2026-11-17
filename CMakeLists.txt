@@ -51,6 +51,7 @@ target_link_libraries(${PROJECT_TARGET}
     hardware_adc
     hardware_pwm
     hardware_gpio
+    hardware_dma
     tinyusb_device
     magic_enum::magic_enum
 )
