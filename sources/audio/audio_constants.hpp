@@ -44,6 +44,7 @@ namespace constants::audio{
     // first order average of the played duty, 2^9 samples = 10.7 ms to match R24 C9 (10 ms) in front of the adc
     constexpr uint8_t           PlayedDutyAverageShift  {9};
 
+    constexpr units::Ms         StatisticsInterval      {1'000};
     constexpr units::Ms         ControlReportDelay      {300}; // volume is reported once the slider settles
 
     static_assert((RingLength & (RingLength - 1)) == 0);

@@ -18,9 +18,13 @@ void AudioStreamer::writeFrames(const int16_t *samples, uint16_t frameCount, uni
 
         const int32_t magnitude{mono < 0 ? -mono : mono};
         chunkPeak = std::max(chunkPeak, magnitude);
+        window_.sumOfSquares += static_cast<uint32_t>(mono * mono);
 
         writeSample(mono);
     }
+
+    window_.inputSampleCount += frameCount;
+    window_.peakMagnitude     = std::max(window_.peakMagnitude, chunkPeak);
 
     updateSilenceGate(chunkPeak, currentTime);
 }
@@ -52,6 +56,11 @@ void AudioStreamer::writeSample(int32_t sample){
 
     ring_[writtenCount_ & RingMask] = level;
     writtenCount_++;
+
+    window_.levelCount++;
+    window_.levelSum     += level;
+    window_.minimumLevel  = std::min(window_.minimumLevel, level);
+    window_.maximumLevel  = std::max(window_.maximumLevel, level);
 }
 
 void AudioStreamer::foldPlayedSamples(uint32_t consumed){

@@ -18,6 +18,7 @@ private:
 private:
     bool        isMounted_              {false};
     bool        isStreamOpen_           {false};
+    uint32_t    receivedFrames_         {0};
 
 private:
     int16_t     volume_[ControlChannelCount]{}; // 1/256 dB
@@ -47,6 +48,7 @@ public:
     int32_t leftGain() const{ return leftGain_;}
     int32_t rightGain() const{ return rightGain_;}
 
+    uint32_t receivedFrames() const{ return receivedFrames_;}
     uint16_t availableFrames() const;
     uint16_t fifoDepthFrames() const;
 
@@ -59,6 +61,7 @@ public:
     void handleUnmount();
     void handleStreamInterface(uint8_t alternate);
     void handleStreamEndpointsClosing();
+    void handleReceived(uint16_t byteCount);
     bool handleGetRequest(uint8_t rootHubPort, const tusb_control_request_t *request);
     bool handleSetRequest(uint8_t rootHubPort, const tusb_control_request_t *request, const uint8_t *buffer);
     void handleFeedbackParameters(audio_feedback_params_t *parameters);

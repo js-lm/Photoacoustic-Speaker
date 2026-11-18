@@ -102,7 +102,8 @@ void AudioStreamer::pump(UsbAudioDevice &usbAudioDevice){
 
     int32_t fill{static_cast<int32_t>(writtenCount_ - consumed)};
     if(fill < 0){
-        DEBUG_PRINT("Ring underrun: main loop stalled, %lu stale samples replayed", static_cast<unsigned long>(-fill));
+        window_.ringUnderrunCount++;
+        DEBUG_reportGlitch("Ring underrun: main loop stalled, %lu stale samples replayed", static_cast<unsigned long>(-fill));
         writtenCount_ = consumed;
         fill = 0;
     }
@@ -110,7 +111,8 @@ void AudioStreamer::pump(UsbAudioDevice &usbAudioDevice){
     if(isStreamOpen_ && !isPrimed_) updatePriming(usbAudioDevice, currentTime);
 
     if(isStreamOpen_ && usbAudioDevice.checkOverflow()){
-        DEBUG_PRINT("Overflow: usb fifo full, host data dropped (ring fill %lu)", static_cast<unsigned long>(fill));
+        window_.overflowCount++;
+        DEBUG_reportGlitch("Overflow: usb fifo full, host data dropped (ring fill %lu)", static_cast<unsigned long>(fill));
     }
 
     if(fill < constants::audio::RingTargetFill){
@@ -130,15 +132,20 @@ void AudioStreamer::pump(UsbAudioDevice &usbAudioDevice){
 
             const uint32_t remainingFill{constants::audio::RingTargetFill - neededCount};
             if(neededCount > 0 && remainingFill < constants::audio::RingLowWatermark){
+                window_.underrunCount++;
                 isPrimed_         = false;
                 primingStartTime_ = currentTime;
-                DEBUG_PRINT("Underrun: usb fifo empty with %lu samples left, re-buffering", static_cast<unsigned long>(remainingFill));
+                DEBUG_reportGlitch("Underrun: usb fifo empty with %lu samples left, re-buffering", static_cast<unsigned long>(remainingFill));
                 writeSilence(neededCount);
             }
         }else{
             writeSilence(neededCount);
         }
     }
+
+#ifdef DEBUG
+    if(isStreamOpen_) DEBUG_reportWindow(usbAudioDevice, currentTime);
+#endif
 }
 
 void AudioStreamer::discard(UsbAudioDevice &usbAudioDevice){
@@ -163,13 +170,19 @@ void AudioStreamer::trackStream(const UsbAudioDevice &usbAudioDevice, units::Tim
     isPrimed_     = false;
 
     if(!isOpen){
-        DEBUG_PRINT("Stream closed");
+        DEBUG_reportStreamClosed(currentTime);
         return;
     }
 
+    streamOpenedTime_       = currentTime;
     primingStartTime_       = currentTime;
     lastSignalTime_         = currentTime;
+    lastReportTime_         = currentTime;
+    reportReceivedFrames_   = usbAudioDevice.receivedFrames();
     isSilent_               = false;
+    hasReportedGlitch_      = false;
+    resetStatistics(window_);
+    resetStatistics(stream_);
 
     DEBUG_PRINT(
         "Stream opened: %lu Hz, %u ch, %u bit%s",
@@ -188,8 +201,10 @@ void AudioStreamer::updatePriming(const UsbAudioDevice &usbAudioDevice, units::T
     isPrimed_ = true;
 
     const float waitedMilliseconds{(currentTime - primingStartTime_) / 1000.0f};
+    const bool isRecovering{window_.underrunCount + stream_.underrunCount > 0};
     DEBUG_PRINT(
-        "Stream buffered, playing after %.1f ms (usb fifo %u/%u frames)",
+        "%s after %.1f ms (usb fifo %u/%u frames)",
+        isRecovering ? "Recovered from underrun" : "Stream buffered, playing",
         waitedMilliseconds,
         availableFrames,
         depthFrames
@@ -201,7 +216,7 @@ void AudioStreamer::updateSilenceGate(int32_t chunkPeak, units::TimestampUs curr
         lastSignalTime_ = currentTime;
         if(isSilent_){
             isSilent_ = false;
-            DEBUG_PRINT("Signal detected (peak %ld), fading in", static_cast<long>(chunkPeak));
+            DEBUG_PRINT("Signal detected (peak %.1f dBFS), fading in", toDecibelsFullScale(chunkPeak));
         }
         return;
     }

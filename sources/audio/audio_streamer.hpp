@@ -47,12 +47,33 @@ private:
     int32_t             rightGain_          {1 << 15};
     int32_t             envelope_           {0}; // Q24, 0 = dark, EnvelopeUnity = full range
     int32_t             previousSample_     {0}; // pre-emphasis state
+    units::TimestampUs  streamOpenedTime_   {0};
     units::TimestampUs  primingStartTime_   {0};
     units::TimestampUs  lastSignalTime_     {0};
 
 private:
     uint32_t    playedCount_        {0};
     int32_t     playedLevelAverage_ {0}; // Q16 levels
+
+private:
+    struct Statistics{
+        uint32_t    underrunCount;
+        uint32_t    ringUnderrunCount;
+        uint32_t    overflowCount;
+        uint32_t    inputSampleCount;
+        int32_t     peakMagnitude;
+        uint64_t    sumOfSquares;
+        uint32_t    levelCount;
+        uint32_t    minimumLevel;
+        uint32_t    maximumLevel;
+        uint64_t    levelSum;
+    };
+
+    Statistics          window_                 {};
+    Statistics          stream_                 {};
+    uint32_t            reportReceivedFrames_   {0};
+    units::TimestampUs  lastReportTime_         {0};
+    bool                hasReportedGlitch_      {false};
 
 public:
     AudioStreamer() = default;
@@ -91,4 +112,14 @@ private:
     void writeFrames(const int16_t *samples, uint16_t frameCount, units::TimestampUs currentTime);
     void writeSilence(uint32_t sampleCount);
     void writeSample(int32_t sample);
+
+private:
+    static void resetStatistics(Statistics &statistics);
+    static void accumulateStatistics(Statistics &total, const Statistics &window);
+    static float toDecibelsFullScale(float magnitude);
+
+private:
+    void DEBUG_reportGlitch(const char *format, unsigned long value);
+    void DEBUG_reportWindow(const UsbAudioDevice &usbAudioDevice, units::TimestampUs currentTime);
+    void DEBUG_reportStreamClosed(units::TimestampUs currentTime);
 };

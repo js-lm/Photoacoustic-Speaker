@@ -103,6 +103,10 @@ void UsbAudioDevice::handleStreamEndpointsClosing(){
     }
 }
 
+void UsbAudioDevice::handleReceived(uint16_t byteCount){
+    receivedFrames_ += byteCount / constants::audio::BytesPerFrame;
+}
+
 void UsbAudioDevice::handleFeedbackParameters(audio_feedback_params_t *parameters){
     parameters->method      = AUDIO_FEEDBACK_METHOD_FIFO_COUNT;
     parameters->sample_freq = constants::audio::SampleRate;

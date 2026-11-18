@@ -42,6 +42,22 @@ bool tud_audio_set_req_entity_cb(uint8_t rootHubPort, tusb_control_request_t con
     return UsbAudioDevice::getInstance().handleSetRequest(rootHubPort, request, buffer);
 }
 
+bool tud_audio_rx_done_post_read_cb(
+    uint8_t     rootHubPort,
+    uint16_t    byteCount,
+    uint8_t     functionId,
+    uint8_t     endpointOut,
+    uint8_t     alternate
+){
+    (void)rootHubPort;
+    (void)functionId;
+    (void)endpointOut;
+    (void)alternate;
+
+    UsbAudioDevice::getInstance().handleReceived(byteCount);
+    return true;
+}
+
 void tud_audio_feedback_params_cb(uint8_t functionId, uint8_t alternate, audio_feedback_params_t *parameters){
     (void)functionId;
     (void)alternate;
