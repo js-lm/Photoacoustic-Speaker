@@ -89,7 +89,7 @@ namespace usb_descriptors{
         TUD_AUDIO_DESC_FEATURE_UNIT_TWO_CHANNEL(
             entity::FeatureUnit,
             entity::InputTerminal,
-            FeatureUnitControls,
+            0,
             FeatureUnitControls,
             FeatureUnitControls,
             0
