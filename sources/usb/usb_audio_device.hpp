@@ -12,7 +12,7 @@
 // all logging happens in update(), outside tud_task(), because printf over cdc can itself call tud_task()
 class UsbAudioDevice{
 private:
-    // index 0 is the master channel then left and right
+    // indexed by the uac2 channel number: 1 left, 2 right. 0 is master, not offered
     static constexpr uint8_t ControlChannelCount{constants::audio::ChannelCount + 1};
 
 private:
@@ -26,7 +26,7 @@ private:
     int32_t     leftGain_               {1 << 15}; // Q15, 1 << 15 is unity
     int32_t     rightGain_              {1 << 15};
     uint32_t    controlChangeCount_     {0};
-    uint32_t    rejectedSampleRate_     {0};
+    uint32_t    rejectedSampleRate_     {0}; //
 
 private:
     bool                wasMounted_             {false};

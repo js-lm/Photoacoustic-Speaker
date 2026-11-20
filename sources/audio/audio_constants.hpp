@@ -17,11 +17,9 @@ namespace constants::audio{
 
     // the audio range, NOT a safety limit (that's constants::carrier::DutyCap)
     // full scale audio swings the duty between 0 and this value, silence sits at half of it
-    constexpr units::DutyCycle  MaximumAudioDuty        {.40f};
+    // fixed duty / variable current experiments found the loudest output at around this duty
+    constexpr units::DutyCycle  MaximumAudioDuty        {.75f};
 
-    // +6 dB/octave pre-emphasis to offset the thermal roll-off of the absorber
-    constexpr bool              ShouldApplyPreEmphasis  {false};
-    constexpr float             PreEmphasisCoefficient  {.90f};
 
     // host volume control, in 1/256 dB as defined by uac2
     constexpr int16_t           MinimumVolume           {-60 * 256};

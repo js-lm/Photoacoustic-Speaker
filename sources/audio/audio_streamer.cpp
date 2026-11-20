@@ -58,7 +58,6 @@ void AudioStreamer::startDma(){
     playedCount_        = 0;
     playedLevelAverage_ = 0;
     envelope_           = 0;
-    previousSample_     = 0;
 
     dma_channel_config configuration{dma_channel_get_default_config(dmaChannel_)};
     channel_config_set_transfer_data_size(&configuration, DMA_SIZE_32);
@@ -159,7 +158,7 @@ void AudioStreamer::discard(UsbAudioDevice &usbAudioDevice){
     const uint16_t regulationFrames{static_cast<uint16_t>(usbAudioDevice.fifoDepthFrames() / 2)};
     if(availableFrames > regulationFrames) usbAudioDevice.discard(availableFrames - regulationFrames);
 
-    usbAudioDevice.checkOverflow();
+    // usbAudioDevice.checkOverflow();
 }
 
 void AudioStreamer::trackStream(const UsbAudioDevice &usbAudioDevice, units::TimestampUs currentTime){

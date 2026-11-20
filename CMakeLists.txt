@@ -13,7 +13,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(ENABLE_USB_OUTPUT 1)
 set(ENABLE_UART_OUTPUT 0)
 
-set(LOG 0)
+# set(LOG 0)
 
 pico_sdk_init()
 

@@ -34,15 +34,7 @@ void AudioStreamer::writeSilence(uint32_t sampleCount){
 }
 
 void AudioStreamer::writeSample(int32_t sample){
-    if constexpr(constants::audio::ShouldApplyPreEmphasis){
-        // y = (x - a * x[n-1]) / (1 + a), first order high shelf, normalized so it cannot clip
-        constexpr int32_t Coefficient   {static_cast<int32_t>(constants::audio::PreEmphasisCoefficient * 32768.0f)};
-        constexpr int32_t Normalisation {static_cast<int32_t>(32768.0f / (1.0f + constants::audio::PreEmphasisCoefficient))};
 
-        const int32_t emphasized{((sample << 15) - Coefficient * previousSample_) >> 15};
-        previousSample_ = sample;
-        sample = std::clamp<int32_t>((emphasized * Normalisation) >> 15, -32768, 32767);
-    }
 
     // -32768..32767 -> 0..fullScaleLevel_, silence lands on half of the audio range
     const uint32_t unsignedSample{static_cast<uint32_t>(sample + 32768)};

@@ -11,7 +11,7 @@
 
 // turns the usb sample stream into pwm compare words
 //
-//   usb fifo -> mono mix x host volume -> (pre-emphasis) -> duty in [0, MaximumAudioDuty] x fade envelope
+//   usb fifo -> mono mix x host volume -> duty in [0, MaximumAudioDuty] x fade envelope
 //            -> ring buffer -> dma paced by the pwm wrap, one compare word per carrier period
 //
 // every word in the ring is already clamped to the carrier cap, so a stalled loop or a glitch can only
@@ -46,7 +46,6 @@ private:
     int32_t             leftGain_           {1 << 15}; // Q15 host volume, cached every pump
     int32_t             rightGain_          {1 << 15};
     int32_t             envelope_           {0}; // Q24, 0 = dark, EnvelopeUnity = full range
-    int32_t             previousSample_     {0}; // pre-emphasis state
     units::TimestampUs  streamOpenedTime_   {0};
     units::TimestampUs  primingStartTime_   {0};
     units::TimestampUs  lastSignalTime_     {0};

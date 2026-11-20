@@ -30,7 +30,7 @@ void UsbAudioDevice::update(){
 }
 
 bool UsbAudioDevice::isMuted() const{
-    return isMuted_[0] || (isMuted_[1] && isMuted_[2]);
+    return isMuted_[1] && isMuted_[2];
 }
 
 uint16_t UsbAudioDevice::availableFrames() const{
@@ -161,13 +161,9 @@ bool UsbAudioDevice::handleClockGetRequest(uint8_t rootHubPort, const audio_cont
 
 bool UsbAudioDevice::handleClockSetRequest(const audio_control_request_t *request, const uint8_t *buffer){
     if(request->bControlSelector != AUDIO_CS_CTRL_SAM_FREQ) return false;
-    if(request->wLength != sizeof(audio_control_cur_4_t)) return false;
 
     const uint32_t requestedRate{static_cast<uint32_t>(reinterpret_cast<const audio_control_cur_4_t *>(buffer)->bCur)};
-    if(requestedRate == constants::audio::SampleRate) return true;
-
-    rejectedSampleRate_ = requestedRate;
-    return false;
+    return requestedRate == constants::audio::SampleRate;
 }
 
 bool UsbAudioDevice::handleFeatureUnitGetRequest(uint8_t rootHubPort, const audio_control_request_t *request){
@@ -203,10 +199,8 @@ bool UsbAudioDevice::handleFeatureUnitSetRequest(const audio_control_request_t *
     if(channel >= ControlChannelCount) return false;
 
     if(request->bControlSelector == AUDIO_FU_CTRL_MUTE){
-        if(request->wLength != sizeof(audio_control_cur_1_t)) return false;
         isMuted_[channel] = reinterpret_cast<const audio_control_cur_1_t *>(buffer)->bCur != 0;
     }else if(request->bControlSelector == AUDIO_FU_CTRL_VOLUME){
-        if(request->wLength != sizeof(audio_control_cur_2_t)) return false;
         volume_[channel] = std::clamp<int16_t>(
             reinterpret_cast<const audio_control_cur_2_t *>(buffer)->bCur,
             constants::audio::MinimumVolume,
@@ -223,12 +217,9 @@ bool UsbAudioDevice::handleFeatureUnitSetRequest(const audio_control_request_t *
 
 void UsbAudioDevice::updateGains(){
     auto channelGain{[this](uint8_t channel)->int32_t{
-        if(isMuted_[0] || isMuted_[channel]) return 0;
+        if(isMuted_[channel]) return 0;
 
-        const float decibels{std::max(
-            (volume_[0] + volume_[channel]) / 256.0f,
-            constants::audio::MinimumVolume / 256.0f
-        )};
+        const float decibels{volume_[channel] / 256.0f};
         return static_cast<int32_t>(std::pow(10.0f, decibels / 20.0f) * (1 << 15) + .5f);
     }};
 
@@ -240,15 +231,6 @@ void UsbAudioDevice::DEBUG_reportEvents(){
     if(isMounted_ != wasMounted_){
         wasMounted_ = isMounted_;
         DEBUG_PRINT("USB: %s", isMounted_ ? "mounted, speaker available to the host" : "unmounted");
-    }
-
-    if(rejectedSampleRate_ != 0){
-        DEBUG_PRINT(
-            "USB: host asked for %lu Hz, only %lu Hz is supported",
-            static_cast<unsigned long>(rejectedSampleRate_),
-            static_cast<unsigned long>(constants::audio::SampleRate)
-        );
-        rejectedSampleRate_ = 0;
     }
 
     const units::TimestampUs currentTime{time_us_64()};
