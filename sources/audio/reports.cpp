@@ -66,7 +66,7 @@ void AudioStreamer::DEBUG_reportWindow(const UsbAudioDevice &usbAudioDevice, uni
     const float averageDuty{hasLevels ? static_cast<float>(window_.levelSum) / window_.levelCount / periodTicks_ : .0f};
 
     DEBUG_PRINT(
-        "Audio %-9s host %5.0f Hz | fifo %3u/%u | ring %3ld | peak %5.1f rms %5.1f dBFS | duty %.3f-%.3f avg %.3f | env %.2f | underrun %lu ring %lu overflow %lu",
+        "Audio %-9s host %5.0f Hz | fifo %3u/%u | ring %3ld | peak %5.1f rms %5.1f dBFS | comp %+.1f..%+.1f dB clip %lu | duty %.3f-%.3f avg %.3f | env %.2f | underrun %lu ring %lu overflow %lu",
         status,
         hostRate,
         usbAudioDevice.availableFrames(),
@@ -74,6 +74,9 @@ void AudioStreamer::DEBUG_reportWindow(const UsbAudioDevice &usbAudioDevice, uni
         static_cast<long>(writtenCount_ - consumedCount()),
         toDecibelsFullScale(window_.peakMagnitude),
         toDecibelsFullScale(rootMeanSquare),
+        compressor_.minimumGain(),
+        compressor_.maximumGain(),
+        static_cast<unsigned long>(compressor_.clippedCount()),
         minimumDuty,
         maximumDuty,
         averageDuty,
@@ -85,6 +88,7 @@ void AudioStreamer::DEBUG_reportWindow(const UsbAudioDevice &usbAudioDevice, uni
 
     accumulateStatistics(stream_, window_);
     resetStatistics(window_);
+    compressor_.resetWindow();
     hasReportedGlitch_ = false;
 }
 

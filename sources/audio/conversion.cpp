@@ -9,18 +9,20 @@
 void AudioStreamer::writeFrames(const int16_t *samples, uint16_t frameCount, units::TimestampUs currentTime){
     int32_t chunkPeak{0};
 
+    const int32_t volume{(leftGain_ + rightGain_) >> 1}; // Q15
+
     for(uint16_t frameIndex{0}; frameIndex < frameCount; frameIndex++){
         const int32_t left {samples[2 * frameIndex]};
         const int32_t right{samples[2 * frameIndex + 1]};
-
-        // gains are at most 1 << 15, so the sum stays inside int32 and the result inside int16
-        const int32_t mono{(left * leftGain_ + right * rightGain_) >> 16};
+        const int32_t mono {(left + right) >> 1};
 
         const int32_t magnitude{mono < 0 ? -mono : mono};
         chunkPeak = std::max(chunkPeak, magnitude);
         window_.sumOfSquares += static_cast<uint32_t>(mono * mono);
 
-        writeSample(mono);
+        const int32_t compressed{constants::audio::compressor::IsEnabled ? compressor_.process(mono) : mono};
+
+        writeSample((compressed * volume) >> 15);
     }
 
     window_.inputSampleCount += frameCount;

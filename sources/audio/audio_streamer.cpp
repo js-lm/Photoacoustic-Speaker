@@ -180,14 +180,19 @@ void AudioStreamer::trackStream(const UsbAudioDevice &usbAudioDevice, units::Tim
     reportReceivedFrames_   = usbAudioDevice.receivedFrames();
     isSilent_               = false;
     hasReportedGlitch_      = false;
+    compressor_.reset();
     resetStatistics(window_);
     resetStatistics(stream_);
 
     DEBUG_PRINT(
-        "Stream opened: %lu Hz, %u ch, %u bit%s",
+        "Stream opened: %lu Hz, %u ch, %u bit, compressor %s (%.0f dBFS %.0f:1, makeup %+.1f dB)%s",
         static_cast<unsigned long>(constants::audio::SampleRate),
         constants::audio::ChannelCount,
         constants::audio::BitsPerSample,
+        constants::audio::compressor::IsEnabled ? "on" : "off",
+        constants::audio::compressor::Threshold,
+        constants::audio::compressor::Ratio,
+        constants::audio::compressor::MakeupGain,
         isRunning_ ? "" : " -- driver not armed, audio is discarded until ARM"
     );
 }

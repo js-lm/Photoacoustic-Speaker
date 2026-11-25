@@ -5,17 +5,11 @@
 
 #include "usb/usb_audio_device.hpp"
 #include "carrier/carrier_manager.hpp"
+#include "audio/compressor.hpp"
 
 #include <bit>
 #include <cstdint>
 
-// turns the usb sample stream into pwm compare words
-//
-//   usb fifo -> mono mix x host volume -> duty in [0, MaximumAudioDuty] x fade envelope
-//            -> ring buffer -> dma paced by the pwm wrap, one compare word per carrier period
-//
-// every word in the ring is already clamped to the carrier cap, so a stalled loop or a glitch can only
-// replay audio, never drive the output past the cap
 class AudioStreamer{
 private:
     static constexpr uint32_t RingMask          {constants::audio::RingLength - 1};
@@ -45,6 +39,7 @@ private:
     bool                isOutputEnabled_    {false};
     int32_t             leftGain_           {1 << 15}; // Q15 host volume, cached every pump
     int32_t             rightGain_          {1 << 15};
+    Compressor          compressor_         {};
     int32_t             envelope_           {0}; // Q24, 0 = dark, EnvelopeUnity = full range
     units::TimestampUs  streamOpenedTime_   {0};
     units::TimestampUs  primingStartTime_   {0};

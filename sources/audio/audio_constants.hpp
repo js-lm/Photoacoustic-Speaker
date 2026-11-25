@@ -26,6 +26,23 @@ namespace constants::audio{
     constexpr int16_t           MaximumVolume           {0};
     constexpr int16_t           VolumeResolution        {256};
 
+    // try to lift the music to use more of the duty range
+    namespace compressor{
+        constexpr bool      IsEnabled       {true};
+        constexpr float     Threshold       {-30.0f};   // dBFS, the curve bends here
+        constexpr float     Ratio           {4.0f};     // above the threshold, 4 dB in -> 1 dB out
+        constexpr float     OutputCeiling   {-1.0f};    // dBFS a full scale input comes out at
+        constexpr float     MaximumGain     {24.0f};    // dB, caps the lift of quiet passages and noise
+        constexpr uint8_t   AttackShift     {4};        // 2^4 samples, about 0.3 ms
+        constexpr uint8_t   ReleaseShift    {14};       // 2^14 samples, about 340 ms
+        constexpr uint16_t  BlockLength     {32};       // samples per gain update, about 0.7 ms
+
+        // gain below the threshold, so a full scale input lands on OutputCeiling
+        constexpr float     MakeupGain      {OutputCeiling - Threshold * (1.0f - 1.0f / Ratio)};
+
+        static_assert(Ratio >= 1.0f && Threshold < OutputCeiling);
+    } // namespace compressor
+
     // to prevent a loud click
     constexpr units::Ms         FadeDuration            {250};
 
